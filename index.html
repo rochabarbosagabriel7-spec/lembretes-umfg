@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caderno de Lembretes</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="faixa-topo" aria-hidden="true"></div>
+
+    <main class="pagina">
+        <!-- CABEÇALHO -->
+        <header class="cabecalho">
+            <div class="cabecalho-titulo">
+                <span class="selo" aria-hidden="true">✎</span>
+                <div>
+                    <h1>Caderno de Lembretes</h1>
+                    <p>Anote, encontre e organize o que não pode ser esquecido.</p>
+                </div>
+            </div>
+
+            <div class="cabecalho-acoes">
+                <button id="btnImprimir" class="botao botao-contorno" type="button">
+                    <span aria-hidden="true">⎙</span> Gerar PDF
+                </button>
+                <button id="btnNovo" class="botao botao-destaque" type="button">
+                    <span aria-hidden="true">＋</span> Novo lembrete
+                </button>
+            </div>
+        </header>
+
+        <!-- AVISO DE ERRO DE COMUNICAÇÃO -->
+        <div id="avisoErro" class="aviso-erro oculto" role="alert">
+            <div>
+                <strong>Não foi possível falar com a API.</strong>
+                <span id="avisoErroTexto">Verifique se ela está em execução e tente novamente.</span>
+            </div>
+            <button id="btnTentarNovamente" class="botao botao-contorno botao-pequeno" type="button">Tentar novamente</button>
+        </div>
+
+        <div class="grade">
+            <!-- FILTROS -->
+            <aside class="painel painel-filtros" aria-labelledby="tituloFiltros">
+                <div class="painel-titulo">
+                    <h2 id="tituloFiltros">Filtros</h2>
+                    <button id="btnLimpar" class="link-acao" type="button">Limpar</button>
+                </div>
+
+                <form id="formFiltro" novalidate>
+                    <div class="campo">
+                        <label for="filtroDescricao">Descrição contém</label>
+                        <input type="search" id="filtroDescricao" placeholder="Ex.: reunião, pagar, ligar…" autocomplete="off">
+                    </div>
+
+                    <fieldset class="grupo-datas">
+                        <legend>Data de cadastro</legend>
+                        <div class="linha-datas">
+                            <div class="campo">
+                                <label for="filtroCadastroInicial">De</label>
+                                <input type="date" id="filtroCadastroInicial">
+                            </div>
+                            <div class="campo">
+                                <label for="filtroCadastroFinal">Até</label>
+                                <input type="date" id="filtroCadastroFinal">
+                            </div>
+                        </div>
+                        <small class="erro-campo oculto" id="erroCadastro">A data inicial não pode ser maior que a final.</small>
+                    </fieldset>
+
+                    <fieldset class="grupo-datas">
+                        <legend>Data de atualização</legend>
+                        <div class="linha-datas">
+                            <div class="campo">
+                                <label for="filtroAtualizacaoInicial">De</label>
+                                <input type="date" id="filtroAtualizacaoInicial">
+                            </div>
+                            <div class="campo">
+                                <label for="filtroAtualizacaoFinal">Até</label>
+                                <input type="date" id="filtroAtualizacaoFinal">
+                            </div>
+                        </div>
+                        <small class="erro-campo oculto" id="erroAtualizacao">A data inicial não pode ser maior que a final.</small>
+                    </fieldset>
+
+                    <button id="btnFiltrar" class="botao botao-primario botao-largo" type="submit">Aplicar filtros</button>
+                </form>
+            </aside>
+
+            <!-- LISTAGEM -->
+            <section class="painel painel-lista" aria-labelledby="tituloLista">
+                <div class="painel-titulo">
+                    <div>
+                        <h2 id="tituloLista">Lembretes</h2>
+                        <p id="resumoRegistros" class="resumo">Carregando…</p>
+                    </div>
+
+                    <div class="campo campo-inline">
+                        <label for="tamanhoPagina">Por página</label>
+                        <select id="tamanhoPagina">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="tabela-container">
+                    <table class="tabela">
+                        <thead>
+                            <tr>
+                                <th scope="col" aria-sort="none">
+                                    <button class="ordenar" type="button" data-ordem="Descricao">Descrição <span class="seta" aria-hidden="true"></span></button>
+                                </th>
+                                <th scope="col" aria-sort="descending">
+                                    <button class="ordenar" type="button" data-ordem="DataCadastro">Cadastro <span class="seta" aria-hidden="true"></span></button>
+                                </th>
+                                <th scope="col" aria-sort="none">
+                                    <button class="ordenar" type="button" data-ordem="DataAtualizacao">Atualização <span class="seta" aria-hidden="true"></span></button>
+                                </th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="col-acoes">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaLembretes"></tbody>
+                    </table>
+
+                    <div id="carregando" class="estado oculto">
+                        <span class="spinner" aria-hidden="true"></span> Buscando lembretes…
+                    </div>
+
+                    <div id="mensagemVazia" class="estado estado-vazio oculto">
+                        <span class="estado-icone" aria-hidden="true">🗒</span>
+                        <strong>Nenhum lembrete encontrado.</strong>
+                        <span>Ajuste os filtros ou cadastre um novo lembrete.</span>
+                    </div>
+                </div>
+
+                <!-- PAGINAÇÃO -->
+                <nav class="paginacao" aria-label="Paginação">
+                    <button id="btnPrimeira" class="botao-pagina" type="button" aria-label="Primeira página">«</button>
+                    <button id="btnAnterior" class="botao-pagina" type="button" aria-label="Página anterior">‹</button>
+                    <div id="numerosPagina" class="numeros-pagina"></div>
+                    <button id="btnProximo" class="botao-pagina" type="button" aria-label="Próxima página">›</button>
+                    <button id="btnUltima" class="botao-pagina" type="button" aria-label="Última página">»</button>
+                </nav>
+                <p id="paginaAtual" class="pagina-info">Página 1</p>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL: CADASTRO / EDIÇÃO -->
+    <dialog id="modalFormulario" class="modal" aria-labelledby="tituloFormulario">
+        <form id="formLembrete" novalidate>
+            <h2 id="tituloFormulario">Novo lembrete</h2>
+            <input type="hidden" id="lembreteId">
+
+            <div class="campo">
+                <label for="descricao">Descrição <span class="obrigatorio" aria-hidden="true">*</span></label>
+                <textarea id="descricao" rows="4" maxlength="500" placeholder="O que você precisa lembrar?" required></textarea>
+                <div class="campo-rodape">
+                    <small class="erro-campo oculto" id="erroDescricao">A descrição é obrigatória.</small>
+                    <small class="contador" id="contadorDescricao">0/500</small>
+                </div>
+            </div>
+
+            <div class="modal-acoes">
+                <button type="button" id="btnCancelar" class="botao botao-contorno">Cancelar</button>
+                <button type="submit" id="btnSalvar" class="botao botao-primario">Salvar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- MODAL: CONFIRMAR EXCLUSÃO -->
+    <dialog id="modalExcluir" class="modal modal-pequeno" aria-labelledby="tituloExcluir">
+        <h2 id="tituloExcluir">Excluir lembrete?</h2>
+        <p class="modal-texto">“<span id="textoExcluir"></span>” será removido da lista.</p>
+        <div class="modal-acoes">
+            <button type="button" id="btnCancelarExcluir" class="botao botao-contorno">Manter</button>
+            <button type="button" id="btnConfirmarExcluir" class="botao botao-perigo">Excluir</button>
+        </div>
+    </dialog>
+
+    <!-- TOASTS -->
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
